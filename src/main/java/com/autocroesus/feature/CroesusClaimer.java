@@ -25,6 +25,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.PlainTextContents;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -64,6 +65,7 @@ public class CroesusClaimer {
    private static final int[] CHEST_SLOTS = new int[]{
       10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43
    };
+   private static final String KISMET_FEATHER_MODIFIER_TEXT = "Kismet Feather";
    private static final Pattern CHEST_NAME_PATTERN = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)$");
    private static final Pattern CHEST_SCREEN_PATTERN = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)(?: Chest)?$");
    private static final Pattern RUN_GUI_PATTERN = Pattern.compile("^(?:Master )?Catacombs - .+$");
@@ -137,7 +139,7 @@ public class CroesusClaimer {
                if (!waitingForRunToOpen && !waitingForChestToOpen) {
                   startClaiming(mc, player);
                } else if (System.currentTimeMillis() - waitFlagSetAt >= 3000L) {
-                  ChatUtil.msg("§c[Error 103] §fSequence out of sync, stopping. §7DM 22yrs on Discord");
+                  ChatUtil.msg("§c[Error 103] §fSequence out of sync, stopping.");
                   reset();
                }
             }
@@ -165,7 +167,7 @@ public class CroesusClaimer {
                if (waitingOnPage >= 0) {
                   if (page != waitingOnPage) {
                      if (System.currentTimeMillis() - pageChangedAt > 5000L) {
-                        ChatUtil.msg("§c[Error 110] §fTimed out waiting for page " + waitingOnPage + " (stuck on page " + page + "). §7DM 22yrs on Discord");
+                        ChatUtil.msg("§c[Error 110] §fTimed out waiting for page " + waitingOnPage + " (stuck on page " + page + ").");
                         reset();
                      }
 
@@ -181,11 +183,14 @@ public class CroesusClaimer {
                      int slot = slotAndFloor[0];
                      int floorNum = slotAndFloor[1];
                      boolean isMaster = slotAndFloor[2] == 1;
+                     Boolean kismetStruckThrough = isModifierStruckThrough(getSlot(menu, slot), KISMET_FEATHER_MODIFIER_TEXT);
+                     boolean alreadyUsedKismet = Boolean.TRUE.equals(kismetStruckThrough);
+
                      claimFloor = (isMaster ? "M" : "F") + floorNum;
                      claimPage = page;
                      claimRunSlot = slot;
                      claimChestSlot = -1;
-                     claimSkipKismet = false;
+                     claimSkipKismet = alreadyUsedKismet;
                      waitingForRunToOpen = true;
                      waitFlagSetAt = System.currentTimeMillis();
                      indexToClick = slot;
@@ -237,7 +242,7 @@ public class CroesusClaimer {
                   waitFlagSetAt = System.currentTimeMillis();
                } else if (lastPageOn == page) {
                   if (System.currentTimeMillis() - pageChangedAt > 5000L) {
-                     ChatUtil.msg("§c[Error 111] §fTimed out navigating to page " + claimPage + " (stuck on page " + page + "). §7DM 22yrs on Discord");
+                     ChatUtil.msg("§c[Error 111] §fTimed out navigating to page " + claimPage + " (stuck on page " + page + ").");
                      reset();
                   }
                } else {
@@ -302,7 +307,7 @@ public class CroesusClaimer {
 
                         if (costIdx < 0) {
                            if (autoClaiming) {
-                              ChatUtil.msg("§c[Error 104] §fCould not find loot end. §7DM 22yrs on Discord");
+                              ChatUtil.msg("§c[Error 104] §fCould not find loot end.");
                               failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
                               resetClaimInfo();
                               indexToClick = 30;
@@ -317,7 +322,7 @@ public class CroesusClaimer {
                            if (autoClaiming) {
                               String chestColor = CHEST_COLORS.getOrDefault(chestName, "§f");
                               ChatUtil.msg(
-                                 "§c[Error 105] §fFailed to check " + chestColor + chestName + "§r Chest: §r" + errorOut[0] + " §7DM 22yrs on Discord"
+                                 "§c[Error 105] §fFailed to check " + chestColor + chestName + "§r Chest: §r" + errorOut[0] + ""
                               );
                               ChatUtil.msg("§eThis run will be skipped as the info for this chest is incomplete.");
                               failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
@@ -339,7 +344,7 @@ public class CroesusClaimer {
                                     + chestName
                                     + "§r Chest has invalid calculated value ("
                                     + info.value
-                                    + "). §7DM 22yrs on Discord"
+                                    + ")."
                               );
                               ChatUtil.msg("§7Run §f//ac api §7to refresh prices, then try again.");
                               failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
@@ -362,11 +367,11 @@ public class CroesusClaimer {
                         ChatUtil.msg(
                            "§c[Error 116] §fRun GUI has "
                               + nonChestItemsPresent
-                              + " item(s) in chest slots but none match a known chest name. §7DM 22yrs on Discord"
+                              + " item(s) in chest slots but none match a known chest name."
                         );
                         ChatUtil.msg("§7Hypixel may have changed chest names. Run §f//ac reset §7if stuck.");
                      } else {
-                        ChatUtil.msg("§c[Error 106] §fNo chest data found, skipping run. §7DM 22yrs on Discord");
+                        ChatUtil.msg("§c[Error 106] §fNo chest data found, skipping run.");
                      }
 
                      failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
@@ -454,12 +459,12 @@ public class CroesusClaimer {
                   int dbgMenuSize = menu.getItems().size();
                   boolean noKismet;
                   if (kismetSlot.isEmpty()) {
-                     ChatUtil.msg("§c[Error 112] §fKismet slot (50) was empty on arrival. §7DM 22yrs on Discord");
+                     ChatUtil.msg("§c[Error 112] §fKismet slot (50) was empty on arrival.");
                      ChatUtil.msg("§7menuSz=" + dbgMenuSize + " invLoaded=" + isInvLoaded(mc, player));
                      noKismet = true;
                   } else if (!dbgStripped.equals("Reroll Chest")) {
                      String loreTrunc = dbgLore.length() > 80 ? dbgLore.substring(0, 80) + "..." : dbgLore;
-                     ChatUtil.msg("§c[Error 113] §fKismet slot (50) had an unexpected item name. §7DM 22yrs on Discord");
+                     ChatUtil.msg("§c[Error 113] §fKismet slot (50) had an unexpected item name.");
                      ChatUtil.msg("§7name=\"" + dbgStripped + "\" raw=\"" + dbgRawName + "\" menuSz=" + dbgMenuSize);
                      ChatUtil.msg("§7lore: \"" + loreTrunc + "\"");
                      noKismet = true;
@@ -538,7 +543,7 @@ public class CroesusClaimer {
       autoClaiming = true;
       if (!tryClickCroesus(mc, player)) {
          autoClaiming = false;
-         ChatUtil.msg("§c[Error 101] §fCould not find or reach Croesus. §7DM 22yrs on Discord");
+         ChatUtil.msg("§c[Error 101] §fCould not find or reach Croesus.");
          reset();
       } else {
          waitingForCroesus = true;
@@ -578,14 +583,14 @@ public class CroesusClaimer {
       }
 
       if (npcs.size() > 1) {
-         ChatUtil.msg("§c[Error 102] §fFound multiple possible Croesus entities. §7DM 22yrs on Discord");
+         ChatUtil.msg("§c[Error 102] §fFound multiple possible Croesus entities.");
          return false;
       }
 
       AbstractClientPlayer croesus = npcs.getFirst();
       double distSq = player.distanceToSqr(croesus);
       if (distSq > 16.0) {
-         ChatUtil.msg("§c[Error 101] §fCroesus is too far away! §7DM 22yrs on Discord");
+         ChatUtil.msg("§c[Error 101] §fCroesus is too far away!");
          return false;
       }
 
@@ -743,6 +748,47 @@ public class CroesusClaimer {
       }
 
       return sb.toString();
+   }
+
+   /**
+    * Searches an item's lore for a text run matching modifierText (e.g. "Kismet Feather")
+    * and reports whether that specific run has the strikethrough style applied.
+    * Unlike getLoreLines/getLorePlain, this walks the Component tree instead of
+    * flattening to a plain string, because strikethrough lives on Style, not on the
+    * text content, and Component.getString() discards Style entirely.
+    *
+    * @return Boolean.TRUE if found and struck through, Boolean.FALSE if found and not
+    *         struck through, or null if modifierText does not appear in the lore at all.
+    */
+   private static Boolean isModifierStruckThrough(ItemStack stack, String modifierText) {
+      ItemLore lore = (ItemLore)stack.get(DataComponents.LORE);
+      if (lore == null) {
+         return null;
+      }
+
+      for (Component line : lore.lines()) {
+         Boolean found = findModifierStrikethrough(line, modifierText);
+         if (found != null) {
+            return found;
+         }
+      }
+
+      return null;
+   }
+
+   private static Boolean findModifierStrikethrough(Component component, String modifierText) {
+      if (component.getContents() instanceof PlainTextContents plain && modifierText.equals(plain.text())) {
+         return component.getStyle().isStrikethrough();
+      }
+
+      for (Component sibling : component.getSiblings()) {
+         Boolean found = findModifierStrikethrough(sibling, modifierText);
+         if (found != null) {
+            return found;
+         }
+      }
+
+      return null;
    }
 
    private static void printChestBreakdown(String action, ItemParser.ChestInfo info) {
