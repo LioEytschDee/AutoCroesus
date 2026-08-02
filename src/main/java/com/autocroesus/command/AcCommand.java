@@ -18,9 +18,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.AllowCommand;
-import net.minecraft.text.Text;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.HoverEvent.ShowText;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.HoverEvent.ShowText;
 
 public class AcCommand {
    private static final Pattern FLOOR_PATTERN = Pattern.compile("^[FfMm][1-7]$");
@@ -445,9 +445,9 @@ public class AcCommand {
                ChatUtil.msg(
                   "§aAverage profit from §e" + ColorUtil.formatNumber(dungeons) + " §aruns on " + floorLabel + "§a: §6" + ColorUtil.formatNumber(profitPerRun)
                );
-               Text hoverText = Text.literal(hover.toString());
-               MutableText totalLine = Text.literal("§aTotal Profit: §6" + ColorUtil.formatNumber(totalProfit) + " §7(hover for details)");
-               totalLine.styled(s -> s.withHoverEvent(new ShowText(hoverText)));
+               Component hoverText = Component.literal(hover.toString());
+               MutableComponent totalLine = Component.literal("§aTotal Profit: §6" + ColorUtil.formatNumber(totalProfit) + " §7(hover for details)");
+               totalLine.withStyle(s -> s.withHoverEvent(new ShowText(hoverText)));
                ChatUtil.msg(totalLine);
             }
          }

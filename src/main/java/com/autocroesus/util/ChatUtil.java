@@ -1,19 +1,19 @@
 package com.autocroesus.util;
 
-import net.minecraft.text.Text;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.network.chat.Component;
+import net.minecraft.client.Minecraft;
 
 public class ChatUtil {
    public static void msg(String message) {
-      msg(Text.literal(message));
+      msg(Component.literal(message));
    }
 
-   public static void msg(Text component) {
-      MinecraftClient mc = MinecraftClient.getInstance();
+   public static void msg(Component component) {
+      Minecraft mc = Minecraft.getInstance();
       if (mc.player != null) {
-         mc.player.sendMessage(component, false);
-      } else if (mc.inGameHud != null) {
-         mc.inGameHud.getChatHud().addMessage(component);
+         mc.player.sendSystemMessage(component);
+      } else if (mc.gui != null) {
+         mc.gui.getChat().addClientSystemMessage(component);
       }
    }
 }
