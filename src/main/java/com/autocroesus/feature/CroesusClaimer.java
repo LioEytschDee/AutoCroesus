@@ -29,7 +29,6 @@ import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.phys.EntityHitResult;
@@ -204,7 +203,7 @@ public class CroesusClaimer {
                            StringBuilder fb = new StringBuilder();
 
                            for (String f : skippedKismetFloors) {
-                              if (fb.length() > 0) {
+                              if (!fb.isEmpty()) {
                                  fb.append("§f, ");
                               }
 

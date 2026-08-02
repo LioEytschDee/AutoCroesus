@@ -39,6 +39,8 @@ public class ItemParser {
       )
    );
    private static final Map<String, String> ITEM_REPLACEMENTS = new HashMap<>();
+   private static final Map<String, Double> SHINY_WITHER_FIXED_VALUES = new HashMap<>();
+   private static final Map<String, String> SHINY_WITHER_FIXED_IDS = new HashMap<>();
    private static final Pattern BOOK_PATTERN = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)");
    private static final Pattern ESSENCE_PATTERN = Pattern.compile("^(\\w+) Essence x(\\d+)$");
    private static final Pattern COST_PATTERN = Pattern.compile("^([\\d,]+) Coins$");
@@ -204,31 +206,41 @@ public class ItemParser {
             String line = fullTooltip.get(i);
             String clean = ColorUtil.stripColors(line).trim();
             if (!clean.isEmpty()) {
-               String[] result = parseLine(line);
-               if (result[0].equals("false")) {
-                  if (errorOut != null) {
-                     errorOut[0] = result[1];
+               String sbId;
+               int qty;
+               Double itemValue;
+               Double fixedValue = SHINY_WITHER_FIXED_VALUES.get(clean);
+               if (fixedValue != null) {
+                  sbId = SHINY_WITHER_FIXED_IDS.get(clean);
+                  qty = 1;
+                  itemValue = fixedValue;
+               } else {
+                  String[] result = parseLine(line);
+                  if (result[0].equals("false")) {
+                     if (errorOut != null) {
+                        errorOut[0] = result[1];
+                     }
+
+                     return null;
                   }
 
-                  return null;
-               }
+                  sbId = result[0];
+                  qty = Integer.parseInt(result[1]);
+                  itemValue = AcDataStore.getSellPrice(sbId, true);
+                  if (itemValue == null) {
+                     String priceHint;
+                     if (AcDataStore.bzValues.isEmpty() && AcDataStore.binValues.isEmpty()) {
+                        priceHint = " (price caches are empty — run //ac api)";
+                     } else {
+                        priceHint = " (not in Bazaar or BIN — may be a new item, or add it to worthless if it has no value)";
+                     }
 
-               String sbId = result[0];
-               int qty = Integer.parseInt(result[1]);
-               Double itemValue = AcDataStore.getSellPrice(sbId, true);
-               if (itemValue == null) {
-                  String priceHint;
-                  if (AcDataStore.bzValues.isEmpty() && AcDataStore.binValues.isEmpty()) {
-                     priceHint = " (price caches are empty — run //ac api)";
-                  } else {
-                     priceHint = " (not in Bazaar or BIN — may be a new item, or add it to worthless if it has no value)";
+                     if (errorOut != null) {
+                        errorOut[0] = "Could not find value of \"" + clean + "\" [" + sbId + "]" + priceHint;
+                     }
+
+                     return null;
                   }
-
-                  if (errorOut != null) {
-                     errorOut[0] = "Could not find value of \"" + clean + "\" [" + sbId + "]" + priceHint;
-                  }
-
-                  return null;
                }
 
                info.value = info.value + itemValue * qty;
@@ -309,10 +321,12 @@ public class ItemParser {
 
    static {
       ITEM_REPLACEMENTS.put("Shiny Wither Boots", "WITHER_BOOTS");
-      ITEM_REPLACEMENTS.put("Shiny Wither Leggings", "WITHER_LEGGINGS");
-      ITEM_REPLACEMENTS.put("Shiny Wither Chestplate", "WITHER_CHESTPLATE");
       ITEM_REPLACEMENTS.put("Shiny Wither Helmet", "WITHER_HELMET");
       ITEM_REPLACEMENTS.put("Shiny Necron's Handle", "NECRON_HANDLE");
+      SHINY_WITHER_FIXED_VALUES.put("Shiny Wither Leggings", 8_000_000.0);
+      SHINY_WITHER_FIXED_VALUES.put("Shiny Wither Chestplate", 15_000_000.0);
+      SHINY_WITHER_FIXED_IDS.put("Shiny Wither Leggings", "WITHER_LEGGINGS");
+      SHINY_WITHER_FIXED_IDS.put("Shiny Wither Chestplate", "WITHER_CHESTPLATE");
       ITEM_REPLACEMENTS.put("Wither Shard", "SHARD_WITHER");
       ITEM_REPLACEMENTS.put("Thorn Shard", "SHARD_THORN");
       ITEM_REPLACEMENTS.put("Apex Dragon Shard", "SHARD_APEX_DRAGON");
