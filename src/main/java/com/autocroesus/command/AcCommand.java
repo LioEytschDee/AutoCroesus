@@ -55,6 +55,12 @@ public class AcCommand {
             case "forcego":
                cmdGo(true);
                break;
+            case "k":
+               cmdSweep(false);
+               break;
+            case "forcek":
+               cmdSweep(true);
+               break;
             case "reset":
                CroesusClaimer.reset();
                ChatUtil.msg("Reset!");
@@ -119,7 +125,37 @@ public class AcCommand {
                CroesusClaimer.startAutoClaiming();
             }).exceptionally(e -> {
                Throwable cause = e.getCause() != null ? e.getCause() : e;
-               ChatUtil.msg("§c[Error 107] §fFailed to grab data from API: " + cause.getMessage() + " §7DM 22yrs on Discord");
+               ChatUtil.msg("§c[Error 107] §fFailed to grab data from API: " + cause.getMessage());
+               ChatUtil.msg("§cTo try again, run //ac api");
+               return null;
+            });
+         }
+      }
+   }
+
+   private static void cmdSweep(boolean force) {
+      if (force) {
+         ChatUtil.msg("§aKismet sweeping without updating API.");
+         CroesusClaimer.startKismetSweep();
+      } else {
+         long sinceUpdate = System.currentTimeMillis() - AcDataStore.config.lastApiUpdate;
+         if (sinceUpdate <= 1800000L) {
+            CroesusClaimer.startKismetSweep();
+         } else {
+            ChatUtil.msg("§ePrices have not been updated in over 30 minutes. Grabbing data...");
+            PriceFetcher.updatePrices().thenAccept(warning -> {
+               long prevUpdate = AcDataStore.config.lastApiUpdate;
+               AcDataStore.config.lastApiUpdate = System.currentTimeMillis();
+               AcDataStore.saveConfig();
+               if (warning != null && System.currentTimeMillis() - prevUpdate > 3600000L) {
+                  ChatUtil.msg(warning);
+               }
+
+               ChatUtil.msg("§aSuccessfully grabbed data from API!");
+               CroesusClaimer.startKismetSweep();
+            }).exceptionally(e -> {
+               Throwable cause = e.getCause() != null ? e.getCause() : e;
+               ChatUtil.msg("§c[Error 107] §fFailed to grab data from API: " + cause.getMessage());
                ChatUtil.msg("§cTo try again, run //ac api");
                return null;
             });
@@ -140,7 +176,7 @@ public class AcCommand {
          ChatUtil.msg("§aSuccessfully grabbed data from API!");
       }).exceptionally(e -> {
          Throwable cause = e.getCause() != null ? e.getCause() : e;
-         ChatUtil.msg("§c[Error 107] §fFailed to grab data from API: " + cause.getMessage() + " §7DM 22yrs on Discord");
+         ChatUtil.msg("§c[Error 107] §fFailed to grab data from API: " + cause.getMessage());
          ChatUtil.msg("§cTo try again, run //ac api");
          return null;
       });
@@ -157,7 +193,7 @@ public class AcCommand {
             ChatUtil.msg("Min Click Delay is now §6" + ms + "ms");
             if (ms < 150) {
                ChatUtil.msg(
-                  "§cWarning: Setting the delay to a low value with low ping will claim chests so quickly that people in chat might notice. Be careful setting this so low."
+                       "§cWarning: Setting the delay to a low value with low ping will claim chests so quickly that people in chat might notice. Be careful setting this so low."
                );
             }
          } catch (NumberFormatException e) {
@@ -233,9 +269,9 @@ public class AcCommand {
             } else {
                if (!AcDataStore.itemIdExists(upper)) {
                   ChatUtil.msg(
-                     "§cWarning: Could not find §f"
-                        + upper
-                        + " §cin the Skyblock items database. This could be a new item, so it will be added to the list anyway."
+                          "§cWarning: Could not find §f"
+                                  + upper
+                                  + " §cin the Skyblock items database. This could be a new item, so it will be added to the list anyway."
                   );
                }
 
@@ -270,9 +306,9 @@ public class AcCommand {
             } else {
                if (!AcDataStore.itemIdExists(upper)) {
                   ChatUtil.msg(
-                     "§cWarning: Could not find §f"
-                        + upper
-                        + " §cin the Skyblock items database. This could be a new item, so it will be added to the list anyway."
+                          "§cWarning: Could not find §f"
+                                  + upper
+                                  + " §cin the Skyblock items database. This could be a new item, so it will be added to the list anyway."
                   );
                }
 
@@ -336,7 +372,7 @@ public class AcCommand {
             try {
                lines = Files.readAllLines(AcDataStore.LOOT_LOG_FILE);
             } catch (IOException e) {
-               ChatUtil.msg("§c[Error 108] §fFailed to read loot log: " + e.getMessage() + " §7DM 22yrs on Discord");
+               ChatUtil.msg("§c[Error 108] §fFailed to read loot log: " + e.getMessage());
                return;
             }
 
@@ -420,17 +456,17 @@ public class AcCommand {
                      shown++;
                      double pct = totalSellPrice > 0L ? totalVal * 100.0 / totalSellPrice : 0.0;
                      hover.append("§b")
-                        .append(ColorUtil.formatNumber(qty))
-                        .append("x §a")
-                        .append(ItemParser.getFormattedNameFromId(id))
-                        .append(" §a(§6")
-                        .append(ColorUtil.formatNumber(value))
-                        .append("§a)")
-                        .append(" = §6")
-                        .append(ColorUtil.formatNumber(totalVal))
-                        .append(" §8(")
-                        .append(String.format("%.2f", pct))
-                        .append("%)\n");
+                             .append(ColorUtil.formatNumber(qty))
+                             .append("x §a")
+                             .append(ItemParser.getFormattedNameFromId(id))
+                             .append(" §a(§6")
+                             .append(ColorUtil.formatNumber(value))
+                             .append("§a)")
+                             .append(" = §6")
+                             .append(ColorUtil.formatNumber(totalVal))
+                             .append(" §8(")
+                             .append(String.format("%.2f", pct))
+                             .append("%)\n");
                   }
                }
 
@@ -443,7 +479,7 @@ public class AcCommand {
                hover.append("§eTotal Profit: §6").append(ColorUtil.formatNumber(totalProfit)).append("\n");
                hover.append("§bProfit/Run: §6").append(ColorUtil.formatNumber(profitPerRun));
                ChatUtil.msg(
-                  "§aAverage profit from §e" + ColorUtil.formatNumber(dungeons) + " §aruns on " + floorLabel + "§a: §6" + ColorUtil.formatNumber(profitPerRun)
+                       "§aAverage profit from §e" + ColorUtil.formatNumber(dungeons) + " §aruns on " + floorLabel + "§a: §6" + ColorUtil.formatNumber(profitPerRun)
                );
                Component hoverText = Component.literal(hover.toString());
                MutableComponent totalLine = Component.literal("§aTotal Profit: §6" + ColorUtil.formatNumber(totalProfit) + " §7(hover for details)");
@@ -468,13 +504,15 @@ public class AcCommand {
       ChatUtil.msg("§a//ac §8- §7Show help.");
       ChatUtil.msg("§a//ac go §8- §7Start looting.");
       ChatUtil.msg("§a//ac forcego §8- §7Start without API check.");
+      ChatUtil.msg("§a//ac k §8- §7Reroll low-profit Bedrock chests without opening them.");
+      ChatUtil.msg("§a//ac forcek §8- §7Sweep without updating API.");
       ChatUtil.msg("§a//ac api §8- §7Refresh API.");
       ChatUtil.msg("§a//ac settings §8- §7View settings.");
       ChatUtil.msg("§a//ac delay <ms> §8- §7Set click delay.");
       ChatUtil.msg("");
       ChatUtil.msg("§a//ac kismet §8- §7Toggle rerolls.");
       ChatUtil.msg(
-         "§a//ac kismet <min_profit> §8- §7Configure how much profit is required for the chest to not be rerolled. Eg 2,000,000 would mean any chest with >=2m profit will not be rerolled."
+              "§a//ac kismet <min_profit> §8- §7Configure how much profit is required for the chest to not be rerolled. Eg 2,000,000 would mean any chest with >=2m profit will not be rerolled."
       );
       ChatUtil.msg("§a//ac kismet <floor> §8- §7Toggle floor for rerolls.");
       ChatUtil.msg("§a//ac key §8- §7Toggle chest keys.");
@@ -496,7 +534,7 @@ public class AcCommand {
          StringBuilder kfb = new StringBuilder();
 
          for (String f : AcDataStore.config.kismetFloors) {
-            if (kfb.length() > 0) {
+            if (!kfb.isEmpty()) {
                kfb.append("§7, ");
             }
 

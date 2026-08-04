@@ -36,6 +36,7 @@ import net.minecraft.world.phys.EntityHitResult;
 
 public class CroesusClaimer {
    public static boolean autoClaiming = false;
+   public static boolean kismetSweeping = false;
    private static final List<Integer> failedIndexes = new ArrayList<>();
    private static final List<Integer> loggedIndexes = new ArrayList<>();
    private static String claimFloor = null;
@@ -90,7 +91,7 @@ public class CroesusClaimer {
    }
 
    private static void tickKillSwitch(Minecraft mc, AbstractClientPlayer player) {
-      if (autoClaiming) {
+      if (autoClaiming || kismetSweeping) {
          if (!InputConstants.isKeyDown(mc.getWindow(), 340)
             && !InputConstants.isKeyDown(mc.getWindow(), 344)
             && !InputConstants.isKeyDown(mc.getWindow(), 256)) {
@@ -133,7 +134,7 @@ public class CroesusClaimer {
    }
 
    private static void tickStartClaiming(Minecraft mc, AbstractClientPlayer player) {
-      if (autoClaiming && !waitingForCroesus) {
+      if ((autoClaiming || kismetSweeping) && !waitingForCroesus) {
          if (player.containerMenu == player.inventoryMenu) {
             if (waitingOnPage < 0) {
                if (!waitingForRunToOpen && !waitingForChestToOpen) {
@@ -155,7 +156,7 @@ public class CroesusClaimer {
 
       prevWasInCroesus = nowInCroesus;
       if (nowInCroesus) {
-         if (autoClaiming && !waitingForRunToOpen) {
+         if ((autoClaiming || kismetSweeping) && !waitingForRunToOpen) {
             waitingForCroesus = false;
             if (System.currentTimeMillis() - croesusEnteredAt >= 300L) {
                if (claimRunSlot < 0) {
@@ -183,17 +184,35 @@ public class CroesusClaimer {
                      int slot = slotAndFloor[0];
                      int floorNum = slotAndFloor[1];
                      boolean isMaster = slotAndFloor[2] == 1;
+                     String floorKey = (isMaster ? "M" : "F") + floorNum;
+                     int extendedIndex = slot + (page - 1) * 54;
                      Boolean kismetStruckThrough = isModifierStruckThrough(getSlot(menu, slot), KISMET_FEATHER_MODIFIER_TEXT);
                      boolean alreadyUsedKismet = Boolean.TRUE.equals(kismetStruckThrough);
 
-                     claimFloor = (isMaster ? "M" : "F") + floorNum;
-                     claimPage = page;
-                     claimRunSlot = slot;
-                     claimChestSlot = -1;
-                     claimSkipKismet = alreadyUsedKismet;
-                     waitingForRunToOpen = true;
-                     waitFlagSetAt = System.currentTimeMillis();
-                     indexToClick = slot;
+                     if (kismetSweeping) {
+                        if (!AcDataStore.config.kismetFloors.contains(floorKey) || alreadyUsedKismet) {
+                           failedIndexes.add(extendedIndex);
+                           return;
+                        }
+
+                        claimFloor = floorKey;
+                        claimPage = page;
+                        claimRunSlot = slot;
+                        claimChestSlot = -1;
+                        claimSkipKismet = false;
+                        waitingForRunToOpen = true;
+                        waitFlagSetAt = System.currentTimeMillis();
+                        indexToClick = slot;
+                     } else {
+                        claimFloor = floorKey;
+                        claimPage = page;
+                        claimRunSlot = slot;
+                        claimChestSlot = -1;
+                        claimSkipKismet = alreadyUsedKismet;
+                        waitingForRunToOpen = true;
+                        waitFlagSetAt = System.currentTimeMillis();
+                        indexToClick = slot;
+                     }
                   } else {
                      ItemStack nextArrow = getSlot(menu, 53);
                      if (!nextArrow.isEmpty() && ColorUtil.stripColors(nextArrow.getHoverName().getString()).contains("Next Page")) {
@@ -204,7 +223,13 @@ public class CroesusClaimer {
                            pageChangedAt = System.currentTimeMillis();
                         }
                      } else {
-                        if (!canKismet) {
+                        if (kismetSweeping) {
+                           if (!canKismet) {
+                              ChatUtil.msg("§eKismet sweep stopped §f— out of Kismet Feathers.");
+                           } else {
+                              ChatUtil.msg("§aKismet sweep complete!");
+                           }
+                        } else if (!canKismet) {
                            StringBuilder fb = new StringBuilder();
 
                            for (String f : skippedKismetFloors) {
@@ -256,7 +281,7 @@ public class CroesusClaimer {
    }
 
    private static void tickRunGui(Minecraft mc, AbstractClientPlayer player) {
-      if (!autoClaiming && claimRunSlot < 0) {
+      if (!autoClaiming && !kismetSweeping && claimRunSlot < 0) {
          resetClaimInfo();
       } else if (!inRunGui(mc)) {
          if (claimRunSlot < 0) {
@@ -274,7 +299,7 @@ public class CroesusClaimer {
                claimChestSlot = -1;
             } else {
                AbstractContainerMenu menu = player.containerMenu;
-               if (autoClaiming && !worthlessEmptyWarned && AcDataStore.worthless.isEmpty()) {
+               if ((autoClaiming || kismetSweeping) && !worthlessEmptyWarned && AcDataStore.worthless.isEmpty()) {
                   worthlessEmptyWarned = true;
                   ChatUtil.msg(
                      "§e[Warning] §fWorthless list is empty! Items that should be zero-valued will count as profit. Run §b//ac worthless reset §fto restore defaults."
@@ -306,7 +331,7 @@ public class CroesusClaimer {
                         }
 
                         if (costIdx < 0) {
-                           if (autoClaiming) {
+                           if (autoClaiming || kismetSweeping) {
                               ChatUtil.msg("§c[Error 104] §fCould not find loot end.");
                               failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
                               resetClaimInfo();
@@ -319,7 +344,7 @@ public class CroesusClaimer {
                         String[] errorOut = new String[]{null};
                         ItemParser.ChestInfo info = ItemParser.parseRewards(tooltip, errorOut);
                         if (info == null) {
-                           if (autoClaiming) {
+                           if (autoClaiming || kismetSweeping) {
                               String chestColor = CHEST_COLORS.getOrDefault(chestName, "§f");
                               ChatUtil.msg(
                                  "§c[Error 105] §fFailed to check " + chestColor + chestName + "§r Chest: §r" + errorOut[0] + ""
@@ -337,7 +362,7 @@ public class CroesusClaimer {
                         info.chestName = chestName;
                         info.chestColor = CHEST_COLORS.getOrDefault(chestName, "§f");
                         if (Double.isNaN(info.value) || Double.isInfinite(info.value)) {
-                           if (autoClaiming) {
+                           if (autoClaiming || kismetSweeping) {
                               ChatUtil.msg(
                                  "§c[Error 114] §f"
                                     + info.chestColor
@@ -361,7 +386,9 @@ public class CroesusClaimer {
                }
 
                sortChestData(chestData);
-               if (autoClaiming && claimRunSlot >= 0) {
+               if (kismetSweeping && claimRunSlot >= 0) {
+                  handleSweepChestData(chestData, nonChestItemsPresent);
+               } else if (autoClaiming && claimRunSlot >= 0) {
                   if (chestData.isEmpty()) {
                      if (nonChestItemsPresent > 0) {
                         ChatUtil.msg(
@@ -427,6 +454,66 @@ public class CroesusClaimer {
             }
          }
       }
+   }
+
+   /**
+    * Decides what to do with an unopened run's chest data while kismet-sweeping.
+    * Sweep mode never opens or claims a chest — it only rerolls a low-profit Bedrock
+    * chest (once) and then leaves the run untouched either way.
+    */
+   private static void handleSweepChestData(List<ItemParser.ChestInfo> chestData, int nonChestItemsPresent) {
+      int extendedIndex = claimRunSlot + (claimPage - 1) * 54;
+      if (chestData.isEmpty()) {
+         if (nonChestItemsPresent > 0) {
+            ChatUtil.msg(
+                    "§c[Error 116] §fRun GUI has " + nonChestItemsPresent + " item(s) in chest slots but none match a known chest name."
+            );
+            ChatUtil.msg("§7Hypixel may have changed chest names. Run §f//ac reset §7if stuck.");
+         } else {
+            ChatUtil.msg("§c[Error 106] §fNo chest data found, skipping run.");
+         }
+
+         failedIndexes.add(extendedIndex);
+         resetClaimInfo();
+         indexToClick = 30;
+         return;
+      }
+
+      ItemParser.ChestInfo bedrockChest = chestData.stream().filter(c -> "Bedrock".equals(c.chestName)).findFirst().orElse(null);
+      if (bedrockChest == null) {
+         failedIndexes.add(extendedIndex);
+         resetClaimInfo();
+         indexToClick = 30;
+         return;
+      }
+
+      if (claimSkipKismet) {
+         resetClaimInfo();
+         indexToClick = 30;
+         return;
+      }
+
+      if (!canKismet) {
+         ChatUtil.msg("§eKismet sweep stopped §f— out of Kismet Feathers.");
+         failedIndexes.add(extendedIndex);
+         reset();
+         return;
+      }
+
+      boolean hasAlwaysBuyItem = bedrockChest.items.stream().anyMatch(item -> AcDataStore.alwaysBuy.contains(item.id));
+      if (hasAlwaysBuyItem || bedrockChest.profit >= AcDataStore.config.kismetMinProfit) {
+         failedIndexes.add(extendedIndex);
+         resetClaimInfo();
+         indexToClick = 30;
+         return;
+      }
+
+      ChatUtil.msg(fmtFloor(claimFloor) + " §fBedrock worth §c" + ColorUtil.formatNumber(bedrockChest.profit) + " §f— rerolling.");
+      failedIndexes.add(extendedIndex);
+      tryingToKismet = true;
+      indexToClick = bedrockChest.slot;
+      waitingForChestToOpen = true;
+      waitFlagSetAt = System.currentTimeMillis();
    }
 
    private static void tickChestScreen(Minecraft mc, AbstractClientPlayer player) {
@@ -507,8 +594,13 @@ public class CroesusClaimer {
       autoClaiming = true;
    }
 
+   public static void startKismetSweep() {
+      kismetSweeping = true;
+   }
+
    public static void reset() {
       autoClaiming = false;
+      kismetSweeping = false;
       failedIndexes.clear();
       resetClaimInfo();
       waitingForCroesus = false;
@@ -540,9 +632,7 @@ public class CroesusClaimer {
    }
 
    private static void startClaiming(Minecraft mc, AbstractClientPlayer player) {
-      autoClaiming = true;
       if (!tryClickCroesus(mc, player)) {
-         autoClaiming = false;
          ChatUtil.msg("§c[Error 101] §fCould not find or reach Croesus.");
          reset();
       } else {
