@@ -24,30 +24,30 @@ public class PriceFetcher {
 
    private static CompletableFuture<String> fetchUrl(String url) {
       return HTTP.sendAsync(
-            HttpRequest.newBuilder()
-               .uri(URI.create(url))
-               .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-               .build(),
-            BodyHandlers.ofString()
-         )
-         .thenApply(resp -> {
-            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
-               return resp.body();
-            } else {
-               throw new RuntimeException("[Error 306] HTTP " + resp.statusCode() + " from " + url);
-            }
-         });
+                      HttpRequest.newBuilder()
+                              .uri(URI.create(url))
+                              .header("User-Agent", USER_AGENT)
+                              .build(),
+                      BodyHandlers.ofString()
+              )
+              .thenApply(resp -> {
+                 if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                    return resp.body();
+                 } else {
+                    throw new RuntimeException("[Error 306] HTTP " + resp.statusCode() + " from " + url);
+                 }
+              });
    }
 
    public static CompletableFuture<String> updatePrices() {
-      CompletableFuture<String> itemsFuture = fetchUrl("https://api.hypixel.net/v2/resources/skyblock/items");
+      CompletableFuture<String> itemsFuture = fetchUrl(ITEMS_URL);
       AtomicReference<String> pricingFailReason = new AtomicReference<>(null);
-      CompletableFuture<String> pricingSafe = fetchUrl("https://whatyouth.ing/api/nofrills/v2/economy/get-item-pricing/").exceptionally(e -> {
+      CompletableFuture<String> pricingSafe = fetchUrl(PRICING_URL).exceptionally(e -> {
          Throwable cause = e.getCause() != null ? e.getCause() : e;
          pricingFailReason.set(cause.getMessage());
          return null;
       });
-      return CompletableFuture.allOf(itemsFuture, pricingSafe).thenApply(v -> {
+      return CompletableFuture.allOf(itemsFuture, pricingSafe).thenApply(ignored -> {
          try {
             JsonObject resp = JsonParser.parseString(itemsFuture.join()).getAsJsonObject();
             if (!resp.get("success").getAsBoolean()) {

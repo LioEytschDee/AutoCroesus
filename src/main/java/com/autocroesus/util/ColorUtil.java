@@ -13,10 +13,6 @@ public class ColorUtil {
       return String.format("%,d", num);
    }
 
-   public static String formatNumber(double num) {
-      return String.format("%,.0f", num);
-   }
-
    public static String formattedBool(boolean b) {
       return b ? "§atrue" : "§cfalse";
    }

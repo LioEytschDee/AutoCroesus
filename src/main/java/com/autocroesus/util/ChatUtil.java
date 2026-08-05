@@ -12,7 +12,7 @@ public class ChatUtil {
       Minecraft mc = Minecraft.getInstance();
       if (mc.player != null) {
          mc.player.sendSystemMessage(component);
-      } else if (mc.gui != null) {
+      } else if (mc.level != null) {
          mc.gui.getChat().addClientSystemMessage(component);
       }
    }

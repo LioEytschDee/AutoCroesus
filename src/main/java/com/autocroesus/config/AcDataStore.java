@@ -43,58 +43,58 @@ public class AcDataStore {
    public static final Set<String> alwaysBuy = new LinkedHashSet<>();
    public static final Set<String> worthless = new LinkedHashSet<>();
    public static final String[] DEFAULT_ALWAYS_BUY = new String[]{
-      "NECRON_HANDLE",
-      "DARK_CLAYMORE",
-      "FIRST_MASTER_STAR",
-      "SECOND_MASTER_STAR",
-      "THIRD_MASTER_STAR",
-      "FOURTH_MASTER_STAR",
-      "FIFTH_MASTER_STAR",
-      "SHADOW_FURY",
-      "SHADOW_WARP_SCROLL",
-      "IMPLOSION_SCROLL",
-      "WITHER_SHIELD_SCROLL",
-      "DYE_LIVID"
+           "NECRON_HANDLE",
+           "DARK_CLAYMORE",
+           "FIRST_MASTER_STAR",
+           "SECOND_MASTER_STAR",
+           "THIRD_MASTER_STAR",
+           "FOURTH_MASTER_STAR",
+           "FIFTH_MASTER_STAR",
+           "SHADOW_FURY",
+           "SHADOW_WARP_SCROLL",
+           "IMPLOSION_SCROLL",
+           "WITHER_SHIELD_SCROLL",
+           "DYE_LIVID"
    };
    public static final String[] DEFAULT_WORTHLESS = new String[]{
-      "DUNGEON_DISC_5",
-      "DUNGEON_DISC_4",
-      "DUNGEON_DISC_3",
-      "DUNGEON_DISC_2",
-      "DUNGEON_DISC_1",
-      "MAXOR_THE_FISH",
-      "STORM_THE_FISH",
-      "GOLDOR_THE_FISH",
-      "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_1",
-      "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_2",
-      "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_3",
-      "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_4",
-      "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_5",
-      "ENCHANTMENT_ULTIMATE_COMBO_1",
-      "ENCHANTMENT_ULTIMATE_COMBO_2",
-      "ENCHANTMENT_ULTIMATE_COMBO_3",
-      "ENCHANTMENT_ULTIMATE_COMBO_4",
-      "ENCHANTMENT_ULTIMATE_COMBO_5",
-      "ENCHANTMENT_ULTIMATE_BANK_1",
-      "ENCHANTMENT_ULTIMATE_BANK_2",
-      "ENCHANTMENT_ULTIMATE_BANK_3",
-      "ENCHANTMENT_ULTIMATE_BANK_4",
-      "ENCHANTMENT_ULTIMATE_BANK_5",
-      "ENCHANTMENT_ULTIMATE_JERRY_1",
-      "ENCHANTMENT_ULTIMATE_JERRY_2",
-      "ENCHANTMENT_ULTIMATE_JERRY_3",
-      "ENCHANTMENT_ULTIMATE_JERRY_4",
-      "ENCHANTMENT_ULTIMATE_JERRY_5",
-      "ENCHANTMENT_FEATHER_FALLING_6",
-      "ENCHANTMENT_FEATHER_FALLING_7",
-      "ENCHANTMENT_FEATHER_FALLING_8",
-      "ENCHANTMENT_FEATHER_FALLING_9",
-      "ENCHANTMENT_FEATHER_FALLING_10",
-      "ENCHANTMENT_INFINITE_QUIVER_6",
-      "ENCHANTMENT_INFINITE_QUIVER_7",
-      "ENCHANTMENT_INFINITE_QUIVER_8",
-      "ENCHANTMENT_INFINITE_QUIVER_9",
-      "ENCHANTMENT_INFINITE_QUIVER_10"
+           "DUNGEON_DISC_5",
+           "DUNGEON_DISC_4",
+           "DUNGEON_DISC_3",
+           "DUNGEON_DISC_2",
+           "DUNGEON_DISC_1",
+           "MAXOR_THE_FISH",
+           "STORM_THE_FISH",
+           "GOLDOR_THE_FISH",
+           "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_1",
+           "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_2",
+           "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_3",
+           "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_4",
+           "ENCHANTMENT_ULTIMATE_NO_PAIN_NO_GAIN_5",
+           "ENCHANTMENT_ULTIMATE_COMBO_1",
+           "ENCHANTMENT_ULTIMATE_COMBO_2",
+           "ENCHANTMENT_ULTIMATE_COMBO_3",
+           "ENCHANTMENT_ULTIMATE_COMBO_4",
+           "ENCHANTMENT_ULTIMATE_COMBO_5",
+           "ENCHANTMENT_ULTIMATE_BANK_1",
+           "ENCHANTMENT_ULTIMATE_BANK_2",
+           "ENCHANTMENT_ULTIMATE_BANK_3",
+           "ENCHANTMENT_ULTIMATE_BANK_4",
+           "ENCHANTMENT_ULTIMATE_BANK_5",
+           "ENCHANTMENT_ULTIMATE_JERRY_1",
+           "ENCHANTMENT_ULTIMATE_JERRY_2",
+           "ENCHANTMENT_ULTIMATE_JERRY_3",
+           "ENCHANTMENT_ULTIMATE_JERRY_4",
+           "ENCHANTMENT_ULTIMATE_JERRY_5",
+           "ENCHANTMENT_FEATHER_FALLING_6",
+           "ENCHANTMENT_FEATHER_FALLING_7",
+           "ENCHANTMENT_FEATHER_FALLING_8",
+           "ENCHANTMENT_FEATHER_FALLING_9",
+           "ENCHANTMENT_FEATHER_FALLING_10",
+           "ENCHANTMENT_INFINITE_QUIVER_6",
+           "ENCHANTMENT_INFINITE_QUIVER_7",
+           "ENCHANTMENT_INFINITE_QUIVER_8",
+           "ENCHANTMENT_INFINITE_QUIVER_9",
+           "ENCHANTMENT_INFINITE_QUIVER_10"
    };
 
    public static void load() {
@@ -106,7 +106,7 @@ public class AcDataStore {
 
       if (Files.exists(SETTINGS_FILE)) {
          try (Reader r = Files.newBufferedReader(SETTINGS_FILE)) {
-            AcConfig loaded = (AcConfig)GSON.fromJson(r, AcConfig.class);
+            AcConfig loaded = GSON.fromJson(r, AcConfig.class);
             if (loaded != null) {
                config = loaded;
             }
@@ -307,8 +307,8 @@ public class AcDataStore {
       return bz != null ? useSellOrder ? bz.sellOrderValue : bz.instaSellValue : binValues.get(sbId);
    }
 
-   public static boolean itemIdExists(String id) {
-      return sbItemsById.containsKey(id) || bzValues.containsKey(id);
+   public static boolean itemIdMissing(String id) {
+      return !sbItemsById.containsKey(id) && !bzValues.containsKey(id);
    }
 
    public static AcDataStore.SbItem getItemApiData(String id) {

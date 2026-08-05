@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.AllowCommand;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.HoverEvent.ShowText;
@@ -29,7 +28,7 @@ public class AcCommand {
    private static final Pattern LOOT_LIMIT_PATTERN = Pattern.compile("^(?:l|limit):(\\d+)$");
 
    public static void register(Object ignored) {
-      ClientSendMessageEvents.ALLOW_COMMAND.register((AllowCommand)command -> {
+      ClientSendMessageEvents.ALLOW_COMMAND.register(command -> {
          String cmd = command.trim();
          boolean isAc = cmd.equals("/ac") || cmd.startsWith("/ac ");
          boolean isLong = cmd.equals("/autocroesus") || cmd.startsWith("/autocroesus ");
@@ -217,6 +216,7 @@ public class AcCommand {
             ChatUtil.msg("Min chest key profit is now " + ColorUtil.formatNumber(profit));
             return;
          } catch (NumberFormatException var3) {
+            // Not a number — fall through to the toggle behavior below.
          }
       }
 
@@ -267,7 +267,7 @@ public class AcCommand {
                AcDataStore.saveAlwaysBuy();
                ChatUtil.msg("§cRemoved §f" + upper + " §cfrom Always Buy list!");
             } else {
-               if (!AcDataStore.itemIdExists(upper)) {
+               if (AcDataStore.itemIdMissing(upper)) {
                   ChatUtil.msg(
                           "§cWarning: Could not find §f"
                                   + upper
@@ -304,7 +304,7 @@ public class AcCommand {
                AcDataStore.saveWorthless();
                ChatUtil.msg("§cRemoved §f" + upper + " §cfrom Worthless list!");
             } else {
-               if (!AcDataStore.itemIdExists(upper)) {
+               if (AcDataStore.itemIdMissing(upper)) {
                   ChatUtil.msg(
                           "§cWarning: Could not find §f"
                                   + upper
@@ -406,6 +406,7 @@ public class AcCommand {
                               try {
                                  loot.merge(kv[0], Integer.parseInt(kv[1]), Integer::sum);
                               } catch (NumberFormatException var33) {
+                                 // Malformed entry in the loot log — skip it and keep parsing the rest of the line.
                               }
                            }
                         }

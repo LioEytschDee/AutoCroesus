@@ -19,7 +19,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerInput;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.core.NonNullList;
@@ -64,7 +63,7 @@ public class CroesusClaimer {
    private static long waitFlagSetAt = 0L;
    private static String prevScreenTitle = "";
    private static final int[] CHEST_SLOTS = new int[]{
-      10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43
+           10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43
    };
    private static final String KISMET_FEATHER_MODIFIER_TEXT = "Kismet Feather";
    private static final Pattern CHEST_NAME_PATTERN = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)$");
@@ -81,7 +80,7 @@ public class CroesusClaimer {
    private static void onTick(Minecraft mc) {
       AbstractClientPlayer player = mc.player;
       if (player != null && mc.level != null) {
-         tickKillSwitch(mc, player);
+         tickKillSwitch(mc);
          tickExecuteClick(mc, player);
          tickStartClaiming(mc, player);
          tickCroesusMenu(mc, player);
@@ -90,11 +89,11 @@ public class CroesusClaimer {
       }
    }
 
-   private static void tickKillSwitch(Minecraft mc, AbstractClientPlayer player) {
+   private static void tickKillSwitch(Minecraft mc) {
       if (autoClaiming || kismetSweeping) {
          if (!InputConstants.isKeyDown(mc.getWindow(), 340)
-            && !InputConstants.isKeyDown(mc.getWindow(), 344)
-            && !InputConstants.isKeyDown(mc.getWindow(), 256)) {
+                 && !InputConstants.isKeyDown(mc.getWindow(), 344)
+                 && !InputConstants.isKeyDown(mc.getWindow(), 256)) {
             String title = mc.screen != null ? getScreenTitle(mc) : "";
             if (title.isEmpty() && !prevScreenTitle.isEmpty()) {
                boolean prevWasOurs = prevScreenTitle.contains("Croesus") || RUN_GUI_PATTERN.matcher(prevScreenTitle).matches();
@@ -120,14 +119,11 @@ public class CroesusClaimer {
                lastClick = System.currentTimeMillis();
                if (AcDataStore.config.noClick) {
                   ChatUtil.msg("§eClick §f" + indexToClick);
-                  indexToClick = -1;
-               } else {
-                  if (mc.gameMode != null) {
-                     mc.gameMode.handleContainerInput(menu.containerId, indexToClick, 1, ContainerInput.PICKUP, player);
-                  }
-
-                  indexToClick = -1;
+               } else if (mc.gameMode != null) {
+                  mc.gameMode.handleContainerInput(menu.containerId, indexToClick, 1, ContainerInput.PICKUP, player);
                }
+
+               indexToClick = -1;
             }
          }
       }
@@ -186,33 +182,22 @@ public class CroesusClaimer {
                      boolean isMaster = slotAndFloor[2] == 1;
                      String floorKey = (isMaster ? "M" : "F") + floorNum;
                      int extendedIndex = slot + (page - 1) * 54;
-                     Boolean kismetStruckThrough = isModifierStruckThrough(getSlot(menu, slot), KISMET_FEATHER_MODIFIER_TEXT);
+                     Boolean kismetStruckThrough = isModifierStruckThrough(getSlot(menu, slot));
                      boolean alreadyUsedKismet = Boolean.TRUE.equals(kismetStruckThrough);
 
-                     if (kismetSweeping) {
-                        if (!AcDataStore.config.kismetFloors.contains(floorKey) || alreadyUsedKismet) {
-                           failedIndexes.add(extendedIndex);
-                           return;
-                        }
-
-                        claimFloor = floorKey;
-                        claimPage = page;
-                        claimRunSlot = slot;
-                        claimChestSlot = -1;
-                        claimSkipKismet = false;
-                        waitingForRunToOpen = true;
-                        waitFlagSetAt = System.currentTimeMillis();
-                        indexToClick = slot;
-                     } else {
-                        claimFloor = floorKey;
-                        claimPage = page;
-                        claimRunSlot = slot;
-                        claimChestSlot = -1;
-                        claimSkipKismet = alreadyUsedKismet;
-                        waitingForRunToOpen = true;
-                        waitFlagSetAt = System.currentTimeMillis();
-                        indexToClick = slot;
+                     if (kismetSweeping && (!AcDataStore.config.kismetFloors.contains(floorKey) || alreadyUsedKismet)) {
+                        failedIndexes.add(extendedIndex);
+                        return;
                      }
+
+                     claimFloor = floorKey;
+                     claimPage = page;
+                     claimRunSlot = slot;
+                     claimChestSlot = -1;
+                     claimSkipKismet = !kismetSweeping && alreadyUsedKismet;
+                     waitingForRunToOpen = true;
+                     waitFlagSetAt = System.currentTimeMillis();
+                     indexToClick = slot;
                   } else {
                      ItemStack nextArrow = getSlot(menu, 53);
                      if (!nextArrow.isEmpty() && ColorUtil.stripColors(nextArrow.getHoverName().getString()).contains("Next Page")) {
@@ -245,9 +230,9 @@ public class CroesusClaimer {
                               ChatUtil.msg("§eSome chests looted! §fKismets needed for: " + floors);
                            } else {
                               ChatUtil.msg(
-                                 "§eCould not find kismets. §fAuto claiming for "
-                                    + floors
-                                    + " §fis disabled until kismetting is turned off or kismets are available to use."
+                                      "§eCould not find kismets. §fAuto claiming for "
+                                              + floors
+                                              + " §fis disabled until kismetting is turned off or kismets are available to use."
                               );
                            }
                         } else {
@@ -302,7 +287,7 @@ public class CroesusClaimer {
                if ((autoClaiming || kismetSweeping) && !worthlessEmptyWarned && AcDataStore.worthless.isEmpty()) {
                   worthlessEmptyWarned = true;
                   ChatUtil.msg(
-                     "§e[Warning] §fWorthless list is empty! Items that should be zero-valued will count as profit. Run §b//ac worthless reset §fto restore defaults."
+                          "§e[Warning] §fWorthless list is empty! Items that should be zero-valued will count as profit. Run §b//ac worthless reset §fto restore defaults."
                   );
                }
 
@@ -347,7 +332,7 @@ public class CroesusClaimer {
                            if (autoClaiming || kismetSweeping) {
                               String chestColor = CHEST_COLORS.getOrDefault(chestName, "§f");
                               ChatUtil.msg(
-                                 "§c[Error 105] §fFailed to check " + chestColor + chestName + "§r Chest: §r" + errorOut[0] + ""
+                                      "§c[Error 105] §fFailed to check " + chestColor + chestName + "§r Chest: §r" + errorOut[0]
                               );
                               ChatUtil.msg("§eThis run will be skipped as the info for this chest is incomplete.");
                               failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
@@ -364,12 +349,12 @@ public class CroesusClaimer {
                         if (Double.isNaN(info.value) || Double.isInfinite(info.value)) {
                            if (autoClaiming || kismetSweeping) {
                               ChatUtil.msg(
-                                 "§c[Error 114] §f"
-                                    + info.chestColor
-                                    + chestName
-                                    + "§r Chest has invalid calculated value ("
-                                    + info.value
-                                    + ")."
+                                      "§c[Error 114] §f"
+                                              + info.chestColor
+                                              + chestName
+                                              + "§r Chest has invalid calculated value ("
+                                              + info.value
+                                              + ")."
                               );
                               ChatUtil.msg("§7Run §f//ac api §7to refresh prices, then try again.");
                               failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
@@ -392,9 +377,9 @@ public class CroesusClaimer {
                   if (chestData.isEmpty()) {
                      if (nonChestItemsPresent > 0) {
                         ChatUtil.msg(
-                           "§c[Error 116] §fRun GUI has "
-                              + nonChestItemsPresent
-                              + " item(s) in chest slots but none match a known chest name."
+                                "§c[Error 116] §fRun GUI has "
+                                        + nonChestItemsPresent
+                                        + " item(s) in chest slots but none match a known chest name."
                         );
                         ChatUtil.msg("§7Hypixel may have changed chest names. Run §f//ac reset §7if stuck.");
                      } else {
@@ -408,12 +393,12 @@ public class CroesusClaimer {
                      ItemParser.ChestInfo bedrockChest = chestData.stream().filter(c -> "Bedrock".equals(c.chestName)).findFirst().orElse(null);
                      boolean hasAlwaysBuyItem = bedrockChest != null && bedrockChest.items.stream().anyMatch(item -> AcDataStore.alwaysBuy.contains(item.id));
                      if (!hasAlwaysBuyItem
-                        && !claimSkipKismet
-                        && canKismet
-                        && AcDataStore.config.useKismets
-                        && bedrockChest != null
-                        && AcDataStore.config.kismetFloors.contains(claimFloor)
-                        && bedrockChest.profit < AcDataStore.config.kismetMinProfit) {
+                             && !claimSkipKismet
+                             && canKismet
+                             && AcDataStore.config.useKismets
+                             && bedrockChest != null
+                             && AcDataStore.config.kismetFloors.contains(claimFloor)
+                             && bedrockChest.profit < AcDataStore.config.kismetMinProfit) {
                         tryingToKismet = true;
                         indexToClick = bedrockChest.slot;
                         waitingForChestToOpen = true;
@@ -564,14 +549,7 @@ public class CroesusClaimer {
                      skippedKismetFloors.add(claimFloor);
                      failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
                      resetClaimInfo();
-                     tryingToKismet = false;
                      needsToLeaveRunGui = true;
-                     indexToClick = 49;
-                     waitingForRunToOpen = true;
-                     waitFlagSetAt = System.currentTimeMillis();
-                  } else if (getLorePlain(kismetSlot).contains("You already rerolled a chest!")) {
-                     ChatUtil.msg("§eAlready rerolled!");
-                     claimSkipKismet = true;
                      indexToClick = 49;
                      waitingForRunToOpen = true;
                      waitFlagSetAt = System.currentTimeMillis();
@@ -591,10 +569,18 @@ public class CroesusClaimer {
    }
 
    public static void startAutoClaiming() {
+      if (kismetSweeping) {
+         reset();
+      }
+
       autoClaiming = true;
    }
 
    public static void startKismetSweep() {
+      if (autoClaiming) {
+         reset();
+      }
+
       kismetSweeping = true;
    }
 
@@ -647,12 +633,12 @@ public class CroesusClaimer {
       }
 
       AABB box = new AABB(
-         player.getX() - 5.0,
-         player.getY() - 3.0,
-         player.getZ() - 5.0,
-         player.getX() + 5.0,
-         player.getY() + 3.0,
-         player.getZ() + 5.0
+              player.getX() - 5.0,
+              player.getY() - 3.0,
+              player.getZ() - 5.0,
+              player.getX() + 5.0,
+              player.getY() + 3.0,
+              player.getZ() + 5.0
       );
       List<ArmorStand> stands = level.getEntitiesOfClass(ArmorStand.class, box, stand -> ColorUtil.stripColors(stand.getName().getString()).equals("Croesus"));
       if (stands.isEmpty()) {
@@ -661,12 +647,12 @@ public class CroesusClaimer {
 
       ArmorStand displayStand = stands.getFirst();
       List<AbstractClientPlayer> npcs = level.getEntitiesOfClass(
-         AbstractClientPlayer.class,
-         box,
-         p -> p != player
-            && p.getUUID().version() == 2
-            && Math.abs(p.getX() - displayStand.getX()) < 0.01
-            && Math.abs(p.getZ() - displayStand.getZ()) < 0.01
+              AbstractClientPlayer.class,
+              box,
+              p -> p != player
+                      && p.getUUID().version() == 2
+                      && Math.abs(p.getX() - displayStand.getX()) < 0.01
+                      && Math.abs(p.getZ() - displayStand.getZ()) < 0.01
       );
       if (npcs.isEmpty()) {
          return false;
@@ -714,7 +700,7 @@ public class CroesusClaimer {
       }
 
       NonNullList<ItemStack> items = menu.getItems();
-      return items.size() > 45 && !((ItemStack)items.get(items.size() - 45)).isEmpty();
+      return items.size() > 45 && !items.get(items.size() - 45).isEmpty();
    }
 
    private static int getCurrPage(AbstractContainerMenu menu) {
@@ -807,11 +793,11 @@ public class CroesusClaimer {
    }
 
    private static ItemStack getSlot(AbstractContainerMenu menu, int index) {
-      return index >= 0 && index < menu.slots.size() ? ((Slot)menu.slots.get(index)).getItem() : ItemStack.EMPTY;
+      return index >= 0 && index < menu.slots.size() ? menu.slots.get(index).getItem() : ItemStack.EMPTY;
    }
 
    private static List<String> getLoreLines(ItemStack stack) {
-      ItemLore lore = (ItemLore)stack.get(DataComponents.LORE);
+      ItemLore lore = stack.get(DataComponents.LORE);
       if (lore == null) {
          return Collections.emptyList();
       }
@@ -826,7 +812,7 @@ public class CroesusClaimer {
    }
 
    private static String getLorePlain(ItemStack stack) {
-      ItemLore lore = (ItemLore)stack.get(DataComponents.LORE);
+      ItemLore lore = stack.get(DataComponents.LORE);
       if (lore == null) {
          return "";
       }
@@ -841,23 +827,24 @@ public class CroesusClaimer {
    }
 
    /**
-    * Searches an item's lore for a text run matching modifierText (e.g. "Kismet Feather")
-    * and reports whether that specific run has the strikethrough style applied.
+    * Searches an item's lore for a "Kismet Feather" text run and reports whether that
+    * specific run has the strikethrough style applied.
     * Unlike getLoreLines/getLorePlain, this walks the Component tree instead of
     * flattening to a plain string, because strikethrough lives on Style, not on the
     * text content, and Component.getString() discards Style entirely.
     *
     * @return Boolean.TRUE if found and struck through, Boolean.FALSE if found and not
-    *         struck through, or null if modifierText does not appear in the lore at all.
+    *         struck through, or null if the Kismet Feather modifier does not appear
+    *         in the lore at all.
     */
-   private static Boolean isModifierStruckThrough(ItemStack stack, String modifierText) {
-      ItemLore lore = (ItemLore)stack.get(DataComponents.LORE);
+   private static Boolean isModifierStruckThrough(ItemStack stack) {
+      ItemLore lore = stack.get(DataComponents.LORE);
       if (lore == null) {
          return null;
       }
 
       for (Component line : lore.lines()) {
-         Boolean found = findModifierStrikethrough(line, modifierText);
+         Boolean found = findModifierStrikethrough(line, KISMET_FEATHER_MODIFIER_TEXT);
          if (found != null) {
             return found;
          }
@@ -888,7 +875,7 @@ public class CroesusClaimer {
    private static List<String> getTooltip(ItemStack stack) {
       ArrayList<String> tooltip = new ArrayList<>();
       tooltip.add(stack.getHoverName().getString());
-      ItemLore lore = (ItemLore)stack.get(DataComponents.LORE);
+      ItemLore lore = stack.get(DataComponents.LORE);
       if (lore != null) {
          for (Component c : lore.lines()) {
             tooltip.add(c.getString());

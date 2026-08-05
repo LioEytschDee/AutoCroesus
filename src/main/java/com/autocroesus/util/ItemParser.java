@@ -41,10 +41,10 @@ public class ItemParser {
    private static final Map<String, String> ITEM_REPLACEMENTS = new HashMap<>();
    private static final Map<String, Double> SHINY_WITHER_FIXED_VALUES = new HashMap<>();
    private static final Map<String, String> SHINY_WITHER_FIXED_IDS = new HashMap<>();
-   private static final Pattern BOOK_PATTERN = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)");
+   private static final Pattern BOOK_PATTERN = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ([IVX]+|\\d+)(?:§.)*\\)");
    private static final Pattern ESSENCE_PATTERN = Pattern.compile("^(\\w+) Essence x(\\d+)$");
    private static final Pattern COST_PATTERN = Pattern.compile("^([\\d,]+) Coins$");
-   private static final Pattern PET_LORE_PATTERN = Pattern.compile("^\\[Lvl \\d+\\] (.+)$");
+   private static final Pattern PET_LORE_PATTERN = Pattern.compile("^\\[Lvl \\d+] (.+)$");
    private static final Map<String, String> COLOR_TO_RARITY = new LinkedHashMap<>();
    private static final String[] ROMAN_NUMS = new String[]{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
    private static final Pattern ULTIMATE_ENCHANT_PATTERN = Pattern.compile("^ENCHANTMENT_ULTIMATE_([\\w_]+)_(\\d+)$");
