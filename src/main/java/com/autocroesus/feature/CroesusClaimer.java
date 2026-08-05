@@ -569,19 +569,15 @@ public class CroesusClaimer {
    }
 
    public static void startAutoClaiming() {
-      if (kismetSweeping) {
-         reset();
-      }
-
+      reset();
       autoClaiming = true;
+      ChatUtil.msg("§aStarting auto claim!");
    }
 
    public static void startKismetSweep() {
-      if (autoClaiming) {
-         reset();
-      }
-
+      reset();
       kismetSweeping = true;
+      ChatUtil.msg("§aStarting kismet sweep!");
    }
 
    public static void reset() {
