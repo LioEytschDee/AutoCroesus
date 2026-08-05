@@ -141,6 +141,11 @@ public class CroesusClaimer {
                }
             }
          }
+      } else if ((autoClaiming || kismetSweeping) && !inCroesus(mc)) {
+         if (System.currentTimeMillis() - waitFlagSetAt >= 3000L) {
+            ChatUtil.msg("§c[Error 115] §fFailed to click Croesus, try again.");
+            reset();
+         }
       }
    }
 
@@ -619,6 +624,7 @@ public class CroesusClaimer {
          reset();
       } else {
          waitingForCroesus = true;
+         waitFlagSetAt = System.currentTimeMillis();
       }
    }
 
