@@ -61,6 +61,7 @@ public class CroesusClaimer {
    private static long lastClick = 0L;
    private static int indexToClick = -1;
    private static long waitFlagSetAt = 0L;
+   private static long startAttemptSetAt = 0L;
    private static String prevScreenTitle = "";
    private static final int[] CHEST_SLOTS = new int[]{
            10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43
@@ -140,6 +141,9 @@ public class CroesusClaimer {
                   reset();
                }
             }
+         } else if (System.currentTimeMillis() - startAttemptSetAt >= 5000L) {
+            ChatUtil.msg("§c[Error 117] §fCould not start — another menu is open. Close it and try again.");
+            reset();
          }
       } else if ((autoClaiming || kismetSweeping) && !inCroesus(mc)) {
          if (System.currentTimeMillis() - waitFlagSetAt >= 3000L) {
@@ -245,9 +249,6 @@ public class CroesusClaimer {
                         }
 
                         reset();
-                        if (mc.screen != null) {
-                           mc.setScreen(null);
-                        }
                      }
                   }
                } else if (page == claimPage) {
@@ -576,12 +577,14 @@ public class CroesusClaimer {
    public static void startAutoClaiming() {
       reset();
       autoClaiming = true;
+      startAttemptSetAt = System.currentTimeMillis();
       ChatUtil.msg("§aStarting auto claim!");
    }
 
    public static void startKismetSweep() {
       reset();
       kismetSweeping = true;
+      startAttemptSetAt = System.currentTimeMillis();
       ChatUtil.msg("§aStarting kismet sweep!");
    }
 
@@ -605,9 +608,32 @@ public class CroesusClaimer {
       needsToLeaveRunGui = false;
       skippedKismetFloors.clear();
       waitFlagSetAt = 0L;
+      startAttemptSetAt = 0L;
       prevScreenTitle = "";
       prevWasInCroesus = false;
       croesusEnteredAt = 0L;
+      closeAnyOpenScreen();
+   }
+
+   /**
+    * Closes whatever screen and container might currently be open, if any. This is called
+    * from every reset() so no matter why we're stopping — natural completion, kill switch,
+    * or any timeout/error — the server is always told the container is closed. mc.setScreen(null)
+    * alone only closes the client-side visual GUI; it sends no packet to the server at all.
+    * player.closeContainer() is what actually notifies the server and resets containerMenu
+    * back to inventoryMenu, so both are needed together.
+    */
+   private static void closeAnyOpenScreen() {
+      Minecraft mc = Minecraft.getInstance();
+      if (mc.player != null) {
+         if (mc.screen != null) {
+            mc.setScreen(null);
+         }
+
+         if (mc.player.containerMenu != mc.player.inventoryMenu) {
+            mc.player.closeContainer();
+         }
+      }
    }
 
    private static void resetClaimInfo() {
