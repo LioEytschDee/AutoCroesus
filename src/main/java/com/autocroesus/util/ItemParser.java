@@ -108,11 +108,13 @@ public class ItemParser {
          return null;
       }
 
+      int bracketEnd = rawLine.indexOf(']');
+      String searchArea = bracketEnd >= 0 ? rawLine.substring(bracketEnd + 1) : rawLine;
       String colorCode = null;
 
-      for (int i = 0; i < rawLine.length() - 1; i++) {
-         if (rawLine.charAt(i) == 167) {
-            char c = rawLine.charAt(i + 1);
+      for (int i = 0; i < searchArea.length() - 1; i++) {
+         if (searchArea.charAt(i) == 167) {
+            char c = searchArea.charAt(i + 1);
             if (c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
                colorCode = "§" + c;
                break;
@@ -187,7 +189,9 @@ public class ItemParser {
       } else {
          String costStr = ColorUtil.stripColors(fullTooltip.get(costIdx + 1)).trim();
          ItemParser.ChestInfo info = new ItemParser.ChestInfo();
-         if (!costStr.contains("FREE")) {
+         if (costStr.contains("Dungeon Chest Key")) {
+            info.requiresChestKey = true;
+         } else if (!costStr.contains("FREE")) {
             Matcher cm = COST_PATTERN.matcher(costStr);
             if (!cm.matches()) {
                if (errorOut != null) {
@@ -366,6 +370,7 @@ public class ItemParser {
       public int slot;
       public String chestName;
       public String chestColor;
+      public boolean requiresChestKey;
    }
 
    public static class RewardItem {

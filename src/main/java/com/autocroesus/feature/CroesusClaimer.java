@@ -131,6 +131,10 @@ public class CroesusClaimer {
    }
 
    private static void tickStartClaiming(Minecraft mc, AbstractClientPlayer player) {
+      if (inCroesus(mc) || inRunGui(mc) || inChestScreen(mc)) {
+         startAttemptSetAt = System.currentTimeMillis();
+      }
+
       if ((autoClaiming || kismetSweeping) && !waitingForCroesus) {
          if (player.containerMenu == player.inventoryMenu) {
             if (waitingOnPage < 0) {
@@ -279,6 +283,9 @@ public class CroesusClaimer {
             resetClaimInfo();
          }
       } else if (isInvLoaded(mc, player)) {
+         if (claimRunSlot < 0) {
+            return;
+         }
          if (!waitingForChestToOpen) {
             waitingForRunToOpen = false;
             lastPageOn = -1;
@@ -335,6 +342,9 @@ public class CroesusClaimer {
                         String[] errorOut = new String[]{null};
                         ItemParser.ChestInfo info = ItemParser.parseRewards(tooltip, errorOut);
                         if (info == null) {
+                           if (errorOut[0] == null) {
+                              continue;
+                           }
                            if (autoClaiming || kismetSweeping) {
                               String chestColor = CHEST_COLORS.getOrDefault(chestName, "§f");
                               ChatUtil.msg(
@@ -410,30 +420,34 @@ public class CroesusClaimer {
                         waitingForChestToOpen = true;
                         waitFlagSetAt = System.currentTimeMillis();
                      } else {
-                        ItemParser.ChestInfo bestChest = chestData.getFirst();
-                        printChestBreakdown("Claiming", bestChest);
-                        ArrayList<ItemParser.ChestInfo> chestsToClaim = new ArrayList<>();
-                        chestsToClaim.add(bestChest);
-                        if (chestData.size() > 1) {
-                           ItemParser.ChestInfo second = chestData.get(1);
-                           if (AcDataStore.config.useChestKeys && second.profit >= AcDataStore.config.chestKeyMinProfit) {
+                        ItemParser.ChestInfo bestChest = chestData.stream().filter(c -> !c.requiresChestKey).findFirst().orElse(null);
+                        if (bestChest == null) {
+                           failedIndexes.add(claimRunSlot + (claimPage - 1) * 54);
+                           resetClaimInfo();
+                           indexToClick = 30;
+                        } else {
+                           printChestBreakdown("Claiming", bestChest);
+                           ArrayList<ItemParser.ChestInfo> chestsToClaim = new ArrayList<>();
+                           chestsToClaim.add(bestChest);
+                           ItemParser.ChestInfo second = chestData.stream().filter(c -> c != bestChest).findFirst().orElse(null);
+                           if (second != null && AcDataStore.config.useChestKeys && second.profit >= AcDataStore.config.chestKeyMinProfit) {
                               printChestBreakdown("Using chest key on", second);
                               claimChestSlot = second.slot;
                               chestsToClaim.add(second);
                            }
-                        }
 
-                        int runIndex;
-                        if (!loggedIndexes.contains(runIndex = claimRunSlot + (claimPage - 1) * 54)) {
-                           loggedIndexes.add(runIndex);
-                           LootLogger.logLoot(claimFloor, chestsToClaim, totalChestCount);
-                        }
+                           int runIndex;
+                           if (!loggedIndexes.contains(runIndex = claimRunSlot + (claimPage - 1) * 54)) {
+                              loggedIndexes.add(runIndex);
+                              LootLogger.logLoot(claimFloor, chestsToClaim, totalChestCount);
+                           }
 
-                        anyRunsClaimed = true;
-                        indexToClick = bestChest.slot;
-                        waitingForChestToOpen = true;
-                        waitFlagSetAt = System.currentTimeMillis();
-                        failedIndexes.add(runIndex);
+                           anyRunsClaimed = true;
+                           indexToClick = bestChest.slot;
+                           waitingForChestToOpen = true;
+                           waitFlagSetAt = System.currentTimeMillis();
+                           failedIndexes.add(runIndex);
+                        }
                      }
                   }
                } else {
@@ -711,6 +725,10 @@ public class CroesusClaimer {
 
    private static boolean inCroesus(Minecraft mc) {
       return getScreenTitle(mc).contains("Croesus");
+   }
+
+   private static boolean inChestScreen(Minecraft mc) {
+      return CHEST_SCREEN_PATTERN.matcher(getScreenTitle(mc)).matches();
    }
 
    private static boolean inRunGui(Minecraft mc) {
